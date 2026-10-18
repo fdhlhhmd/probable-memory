@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Certificates & Achievements | SKM Interview</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Phosphor Icons -->
+    <script src="https://unpkg.com/@phosphor-icons/web"></script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- External decoupled certificate dataset -->
+    <script src="data.js"></script>
+
+    <style>
+        body {
+            font-family: 'Nunito', sans-serif;
+            background-color: #fdf2f8;
+            background-image: radial-gradient(#fbcfe8 1px, transparent 1px);
+            background-size: 20px 20px;
+        }
+        .cert-card {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .cert-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 16px 30px -8px rgba(245, 158, 11, 0.2);
+        }
+        .page-title {
+            font-size: clamp(1.6rem, 1.2rem + 2vw, 2.3rem);
+        }
+        /* Custom scrollbar for modal */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #f1f5f9;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+    </style>
+</head>
+<body class="min-h-[100dvh] text-slate-700 p-4 sm:p-8 flex flex-col justify-between">
+
+    <div class="max-w-6xl mx-auto w-full">
+        <!-- Top Navigation / Breadcrumb -->
+        <nav class="mb-6 flex flex-wrap items-center justify-between gap-3">
+            <a href="../index.html" class="inline-flex items-center gap-2 px-4 py-2 bg-white hover:bg-amber-50 text-slate-600 hover:text-amber-600 rounded-2xl shadow-sm border border-slate-200/80 transition-all font-bold text-sm">
+                <i class="ph-bold ph-arrow-left text-lg"></i>
+                Back to Document Library
+            </a>
+            <div class="flex items-center gap-3">
+                <!-- Live Browser Directory Scanner Button -->
+                <button onclick="scanFolderDirectly()" id="btn-scan" class="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl shadow-sm text-xs font-bold transition-all" title="Select the sijil folder to auto-scan any new PDF files directly in the browser">
+                    <i class="ph-bold ph-arrows-clockwise text-sm"></i>
+                    <span>Rescan Folder Live</span>
+                </button>
+                <div class="flex items-center gap-2 text-xs sm:text-sm font-semibold text-slate-400 bg-white/70 backdrop-blur px-3 py-1.5 rounded-xl border border-slate-200/60">
+                    <i class="ph ph-folder text-amber-500"></i>
+                    <span class="text-slate-500">skm-interview</span>
+                    <span>/</span>
+                    <span class="text-amber-600 font-bold">sijil</span>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Dynamic Rescan Notification Banner (hidden initially) -->
+        <div id="scan-alert" class="hidden mb-6 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs sm:text-sm flex items-center justify-between gap-3 shadow-sm">
+            <div class="flex items-center gap-2">
+                <i class="ph-fill ph-check-circle text-emerald-600 text-lg"></i>
+                <span id="scan-alert-text">Folder scanned successfully!</span>
+            </div>
+            <button onclick="document.getElementById('scan-alert').classList.add('hidden')" class="text-emerald-600 hover:text-emerald-800 font-bold">
+                <i class="ph-bold ph-x"></i>
+            </button>
+        </div>
+
+        <!-- Header -->
+        <header class="bg-white p-6 sm:p-8 rounded-3xl shadow-sm border border-amber-100 mb-8 relative overflow-hidden">
+            <div class="absolute top-0 left-0 w-full h-2.5 bg-gradient-to-r from-amber-400 via-orange-400 to-rose-400"></div>
+            <div class="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 rounded-2xl bg-amber-50 border border-amber-100 flex items-center justify-center text-amber-600 shrink-0">
+                        <i class="ph-duotone ph-certificate text-4xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="page-title font-extrabold text-slate-800 leading-tight">
+                            Certificates & Achievements
+                        </h1>
+                        <p class="text-slate-500 text-sm font-medium mt-0.5">
+                            Koleksi Sijil: Anugerah, Penghargaan, Tamat Kursus, dan Penyertaan
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Stats summary pills (dynamically calculated) -->
+                <div id="stats-container" class="flex flex-wrap items-center gap-2">
+                    <div class="bg-amber-50 text-amber-800 border border-amber-200/80 px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5">
+                        <i class="ph-fill ph-files"></i>
+                        <span id="stat-total">-- Total</span>
+                    </div>
+                    <div class="bg-indigo-50 text-indigo-800 border border-indigo-200/80 px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5">
+                        <i class="ph-fill ph-seal-check"></i>
+                        <span id="stat-professional">-- Professional</span>
+                    </div>
+                    <div class="bg-rose-50 text-rose-800 border border-rose-200/80 px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5">
+                        <i class="ph-fill ph-trophy"></i>
+                        <span id="stat-award">-- Award</span>
+                    </div>
+                    <div class="bg-blue-50 text-blue-800 border border-blue-200/80 px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5">
+                        <i class="ph-fill ph-star"></i>
+                        <span id="stat-appreciation">-- Appreciation</span>
+                    </div>
+                    <div class="bg-emerald-50 text-emerald-800 border border-emerald-200/80 px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5">
+                        <i class="ph-fill ph-check-circle"></i>
+                        <span id="stat-completion">-- Completion</span>
+                    </div>
+                    <div class="bg-purple-50 text-purple-800 border border-purple-200/80 px-3.5 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5">
+                        <i class="ph-fill ph-users-three"></i>
+                        <span id="stat-participation">-- Participation</span>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- Search & Filters Container -->
+        <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200/80 mb-8 space-y-4">
+            <div class="flex flex-col sm:flex-row gap-3 items-center justify-between">
+                <!-- Search bar -->
+                <div class="relative w-full sm:w-96">
+                    <i class="ph-bold ph-magnifying-glass absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg"></i>
+                    <input 
+                        type="text" 
+                        id="search-input" 
+                        placeholder="Search certificates (e.g. Canva, AI, 2026, Google)..." 
+                        class="w-full pl-11 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-2xl text-sm font-semibold text-slate-700 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:bg-white transition-all"
+                    >
+                </div>
+
+                <!-- Sort select -->
+                <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
+                    <span class="text-xs font-bold text-slate-400 shrink-0">Sort by:</span>
+                    <select id="sort-select" class="bg-slate-50 border border-slate-200 text-xs font-bold text-slate-700 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-amber-400">
+                        <option value="year-desc">Year (Newest First)</option>
+                        <option value="title-asc">Title (A - Z)</option>
+                        <option value="folder">Category</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Category filter buttons (dynamically populated counts) -->
+            <div id="category-buttons" class="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100">
+                <!-- Injected by JS -->
+            </div>
+
+            <!-- Issuer filter pills (dynamically discovered from data) -->
+            <div id="issuer-buttons" class="flex flex-wrap items-center gap-1.5 pt-2">
+                <!-- Injected by JS -->
+            </div>
+        </div>
+
+        <!-- Result count bar -->
+        <div class="flex items-center justify-between mb-4 px-2">
+            <span id="results-count" class="text-xs font-bold text-slate-500">Loading certificates...</span>
+            <span class="text-xs text-slate-400 font-semibold">Click 'View PDF' to open file directly</span>
+        </div>
+
+        <!-- Certificates Grid Container -->
+        <div id="certs-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mb-10">
+            <!-- Dynamically populated by JS -->
+        </div>
+
+        <!-- Empty state -->
+        <div id="empty-state" class="hidden bg-white rounded-3xl p-12 text-center border border-slate-200/80 mb-10">
+            <i class="ph-duotone ph-file-dashed text-6xl text-slate-300 mb-3"></i>
+            <h3 class="text-lg font-bold text-slate-700">No matching certificates found</h3>
+            <p class="text-sm text-slate-400 mt-1">Try adjusting your search query or filters.</p>
+            <button onclick="resetFilters()" class="mt-4 px-4 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-xl text-xs font-bold">
+                Reset All Filters
+            </button>
+        </div>
+    </div>
+
+    <!-- Quick Preview Modal -->
+    <div id="preview-modal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 hidden flex items-center justify-center p-3 sm:p-6">
+        <div class="bg-white w-full max-w-5xl h-[90vh] rounded-3xl shadow-2xl flex flex-col overflow-hidden border border-slate-200">
+            <!-- Modal Header -->
+            <div class="p-4 sm:px-6 bg-slate-50 border-b border-slate-200 flex items-center justify-between gap-4">
+                <div class="flex items-center gap-3 overflow-hidden">
+                    <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center shrink-0">
+                        <i class="ph-bold ph-certificate text-xl"></i>
+                    </div>
+                    <div class="overflow-hidden">
+                        <h3 id="modal-title" class="font-bold text-slate-800 text-sm sm:text-base truncate">Certificate Preview</h3>
+                        <p id="modal-meta" class="text-xs text-slate-400 truncate">Issuer • Year</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2 shrink-0">
+                    <a id="modal-download" href="#" target="_blank" class="px-3.5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl flex items-center gap-1.5 transition-colors">
+                        <i class="ph-bold ph-arrow-square-out"></i>
+                        <span class="hidden sm:inline">Open in New Tab</span>
+                    </a>
+                    <button onclick="closeModal()" class="w-9 h-9 rounded-xl bg-slate-200/70 hover:bg-slate-300 text-slate-600 flex items-center justify-center transition-colors">
+                        <i class="ph-bold ph-x text-lg"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Modal Body (PDF Viewer) -->
+            <div class="flex-1 bg-slate-100 relative">
+                <iframe id="modal-frame" src="" class="w-full h-full border-0"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden file input for webkitdirectory fallback -->
+    <input type="file" id="folder-input-fallback" webkitdirectory directory multiple class="hidden">
+
+    <!-- Footer -->
+    <footer class="mt-12 text-center text-sm text-slate-400 font-semibold py-4">
+        <p>Certificates Portfolio • SKM Interview</p>
+    </footer>
+
+    <!-- Rendering & Filter Controller -->
+    <script>
+        // Load initial dataset from decoupled data.js (or fallback to empty)
+        let certificates = window.CERTIFICATES_DATA || [];
+
+        let currentCategory = 'all';
+        let currentIssuer = 'all';
+        let searchQuery = '';
+        let currentSort = 'year-desc';
+
+        const certsGrid = document.getElementById('certs-grid');
+        const emptyState = document.getElementById('empty-state');
+        const searchInput = document.getElementById('search-input');
+        const sortSelect = document.getElementById('sort-select');
+        const resultsCount = document.getElementById('results-count');
+        const categoryButtons = document.getElementById('category-buttons');
+        const issuerButtons = document.getElementById('issuer-buttons');
+
+        const previewModal = document.getElementById('preview-modal');
+        const modalTitle = document.getElementById('modal-title');
+        const modalMeta = document.getElementById('modal-meta');
+        const modalFrame = document.getElementById('modal-frame');
+        const modalDownload = document.getElementById('modal-download');
+
+        // Dynamic category colors and icons
+        function getCategoryColor(folder) {
+            switch(folder.toLowerCase()) {
+                case 'professional': return { bg: 'bg-indigo-50 text-indigo-700 border-indigo-200', icon: 'ph-seal-check text-indigo-500' };
+                case 'award': return { bg: 'bg-rose-50 text-rose-700 border-rose-200', icon: 'ph-trophy text-rose-500' };
+                case 'appreciation': return { bg: 'bg-blue-50 text-blue-700 border-blue-200', icon: 'ph-star text-blue-500' };
+                case 'completion': return { bg: 'bg-emerald-50 text-emerald-700 border-emerald-200', icon: 'ph-check-circle text-emerald-500' };
+                case 'participation': return { bg: 'bg-purple-50 text-purple-700 border-purple-200', icon: 'ph-users-three text-purple-500' };
+                default: return { bg: 'bg-slate-50 text-slate-700 border-slate-200', icon: 'ph-certificate text-slate-500' };
+            }
+        }
+
+        // Issuer badge color palette
+        function getIssuerBadge(issuer) {
+            switch(issuer) {
+                case 'Google': return 'bg-sky-50 text-sky-700 border-sky-200';
+                case 'AWS': return 'bg-amber-50 text-amber-700 border-amber-200';
+                case 'DataCamp': return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+                case 'UPSI': return 'bg-purple-50 text-purple-700 border-purple-200';
+                case 'Celcom': return 'bg-blue-50 text-blue-700 border-blue-200';
+                case 'Allied View': return 'bg-violet-50 text-violet-700 border-violet-200';
+                case 'KBS': return 'bg-amber-50 text-amber-700 border-amber-200';
+                case 'TAR UMT': return 'bg-rose-50 text-rose-700 border-rose-200';
+                case 'USM': return 'bg-indigo-50 text-indigo-700 border-indigo-200';
+                case 'Bernama': return 'bg-teal-50 text-teal-700 border-teal-200';
+                case 'GAQM': return 'bg-cyan-50 text-cyan-700 border-cyan-200';
+                case 'GDG': return 'bg-red-50 text-red-700 border-red-200';
+                case 'General Assembly': return 'bg-rose-50 text-rose-700 border-rose-200';
+                default: return 'bg-slate-50 text-slate-700 border-slate-200';
+            }
+        }
+
+        // Dynamically compute and update stats and filter buttons based on active certificates
+        function updateStatsAndControls() {
+            const counts = {
+                total: certificates.length,
+                professional: certificates.filter(c => c.folder === 'professional').length,
+                award: certificates.filter(c => c.folder === 'award').length,
+                appreciation: certificates.filter(c => c.folder === 'appreciation').length,
+                completion: certificates.filter(c => c.folder === 'completion').length,
+                participation: certificates.filter(c => c.folder === 'participation').length,
+            };
+
+            document.getElementById('stat-total').textContent = `${counts.total} Total`;
+            const statProfEl = document.getElementById('stat-professional');
+            if (statProfEl) statProfEl.textContent = `${counts.professional} Professional`;
+            document.getElementById('stat-award').textContent = `${counts.award} Award`;
+            document.getElementById('stat-appreciation').textContent = `${counts.appreciation} Appreciation`;
+            document.getElementById('stat-completion').textContent = `${counts.completion} Completion`;
+            document.getElementById('stat-participation').textContent = `${counts.participation} Participation`;
+
+            // Render category buttons dynamically
+            categoryButtons.innerHTML = `
+                <span class="text-xs font-bold text-slate-400 mr-1">Category:</span>
+                <button onclick="setCategory('all')" class="cat-btn ${currentCategory === 'all' ? 'active bg-amber-500 text-white shadow-sm' : 'bg-slate-100 hover:bg-slate-200 text-slate-600'} px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all" data-cat="all">
+                    All (${counts.total})
+                </button>
+                ${counts.professional > 0 ? `
+                <button onclick="setCategory('professional')" class="cat-btn ${currentCategory === 'professional' ? 'active bg-amber-500 text-white shadow-sm' : 'bg-slate-100 hover:bg-indigo-50 text-slate-600 hover:text-indigo-600'} px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all" data-cat="professional">
+                    🎖️ Professional (${counts.professional})
+                </button>` : ''}
+                <button onclick="setCategory('award')" class="cat-btn ${currentCategory === 'award' ? 'active bg-amber-500 text-white shadow-sm' : 'bg-slate-100 hover:bg-rose-50 text-slate-600 hover:text-rose-600'} px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all" data-cat="award">
+                    🏆 Award (${counts.award})
+                </button>
+                <button onclick="setCategory('appreciation')" class="cat-btn ${currentCategory === 'appreciation' ? 'active bg-amber-500 text-white shadow-sm' : 'bg-slate-100 hover:bg-blue-50 text-slate-600 hover:text-blue-600'} px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all" data-cat="appreciation">
+                    ⭐ Appreciation (${counts.appreciation})
+                </button>
+                <button onclick="setCategory('completion')" class="cat-btn ${currentCategory === 'completion' ? 'active bg-amber-500 text-white shadow-sm' : 'bg-slate-100 hover:bg-emerald-50 text-slate-600 hover:text-emerald-600'} px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all" data-cat="completion">
+                    🎓 Completion (${counts.completion})
+                </button>
+                <button onclick="setCategory('participation')" class="cat-btn ${currentCategory === 'participation' ? 'active bg-amber-500 text-white shadow-sm' : 'bg-slate-100 hover:bg-purple-50 text-slate-600 hover:text-purple-600'} px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all" data-cat="participation">
+                    🤝 Participation (${counts.participation})
+                </button>
+            `;
+
+            // Discover all distinct issuers and count occurrences
+            const issuerCounts = {};
+            certificates.forEach(c => {
+                issuerCounts[c.issuer] = (issuerCounts[c.issuer] || 0) + 1;
+            });
+
+            // Sort issuers by count descending
+            const sortedIssuers = Object.keys(issuerCounts).sort((a, b) => issuerCounts[b] - issuerCounts[a]);
+
+            issuerButtons.innerHTML = `
+                <span class="text-xs font-bold text-slate-400 mr-1">Issuer:</span>
+                <button onclick="setIssuer('all')" class="issuer-btn ${currentIssuer === 'all' ? 'active bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} text-[11px] font-bold px-2.5 py-1 rounded-lg" data-issuer="all">
+                    All
+                </button>
+                ${sortedIssuers.map(iss => `
+                    <button onclick="setIssuer('${iss}')" class="issuer-btn ${currentIssuer === iss ? 'active bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'} text-[11px] font-bold px-2.5 py-1 rounded-lg" data-issuer="${iss}">
+                        ${iss} (${issuerCounts[iss]})
+                    </button>
+                `).join('')}
+            `;
+        }
+
+        function renderCertificates() {
+            let filtered = certificates.filter(cert => {
+                const matchesCat = (currentCategory === 'all' || cert.folder.toLowerCase() === currentCategory.toLowerCase());
+                const matchesIssuer = (currentIssuer === 'all' || cert.issuer.toLowerCase() === currentIssuer.toLowerCase());
+                const q = searchQuery.toLowerCase().trim();
+                const matchesSearch = !q || 
+                    cert.title.toLowerCase().includes(q) || 
+                    cert.issuer.toLowerCase().includes(q) || 
+                    cert.filename.toLowerCase().includes(q) || 
+                    cert.year.includes(q) ||
+                    cert.category.toLowerCase().includes(q);
+                return matchesCat && matchesIssuer && matchesSearch;
+            });
+
+            // Sorting
+            filtered.sort((a, b) => {
+                if (currentSort === 'year-desc') {
+                    if (b.year !== a.year) return b.year.localeCompare(a.year);
+                    return a.title.localeCompare(b.title);
+                } else if (currentSort === 'title-asc') {
+                    return a.title.localeCompare(b.title);
+                } else if (currentSort === 'folder') {
+                    return a.folder.localeCompare(b.folder) || a.title.localeCompare(b.title);
+                }
+                return 0;
+            });
+
+            resultsCount.textContent = `Showing ${filtered.length} of ${certificates.length} certificates`;
+
+            if (filtered.length === 0) {
+                certsGrid.innerHTML = '';
+                emptyState.classList.remove('hidden');
+                return;
+            }
+
+            emptyState.classList.add('hidden');
+
+            certsGrid.innerHTML = filtered.map(cert => {
+                const catStyle = getCategoryColor(cert.folder);
+                const issuerBadge = getIssuerBadge(cert.issuer);
+
+                return `
+                    <div class="cert-card bg-white rounded-3xl p-5 border border-slate-200/80 shadow-sm flex flex-col justify-between">
+                        <div>
+                            <!-- Header tags -->
+                            <div class="flex items-center justify-between gap-2 mb-3">
+                                <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full border ${catStyle.bg} flex items-center gap-1">
+                                    <i class="ph-fill ${catStyle.icon}"></i> ${cert.category}
+                                </span>
+                                <span class="text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-mono">
+                                    ${cert.year}
+                                </span>
+                            </div>
+
+                            <!-- Title -->
+                            <h3 class="font-extrabold text-slate-800 text-base leading-snug line-clamp-2 mb-2" title="${cert.title}">
+                                ${cert.title}
+                            </h3>
+
+                            <!-- Badges & info -->
+                            <div class="flex flex-wrap items-center gap-1.5 mb-3 text-xs">
+                                <span class="font-bold px-2 py-0.5 rounded-lg border ${issuerBadge}">
+                                    ${cert.issuer}
+                                </span>
+                                <span class="text-slate-400 font-semibold text-[11px] flex items-center gap-1">
+                                    <i class="ph-bold ph-hard-drives"></i> ${cert.size}
+                                </span>
+                            </div>
+
+                            <!-- Filename snippet -->
+                            <p class="text-[11px] font-mono text-slate-400 truncate mb-4" title="${cert.filename}">
+                                ${cert.path}
+                            </p>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="pt-3 border-t border-slate-100 flex items-center gap-2">
+                            <button onclick="openPreview('${encodeURIComponent(JSON.stringify(cert))}')" class="flex-1 py-2 px-3 bg-slate-100 hover:bg-amber-100 hover:text-amber-800 text-slate-700 text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1.5">
+                                <i class="ph-bold ph-eye"></i> Preview
+                            </button>
+                            <a href="${cert.blobUrl || cert.path}" target="_blank" class="py-2 px-3.5 bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold rounded-xl transition-colors flex items-center justify-center gap-1 shadow-sm shadow-amber-200" title="Open PDF in new tab">
+                                <i class="ph-bold ph-arrow-square-out"></i> Open PDF
+                            </a>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function setCategory(cat) {
+            currentCategory = cat;
+            updateStatsAndControls();
+            renderCertificates();
+        }
+
+        function setIssuer(iss) {
+            currentIssuer = iss;
+            updateStatsAndControls();
+            renderCertificates();
+        }
+
+        function resetFilters() {
+            currentCategory = 'all';
+            currentIssuer = 'all';
+            searchQuery = '';
+            searchInput.value = '';
+            updateStatsAndControls();
+            renderCertificates();
+        }
+
+        searchInput.addEventListener('input', (e) => {
+            searchQuery = e.target.value;
+            renderCertificates();
+        });
+
+        sortSelect.addEventListener('change', (e) => {
+            currentSort = e.target.value;
+            renderCertificates();
+        });
+
+        // Modal Preview Functions
+        function openPreview(encodedCert) {
+            const cert = JSON.parse(decodeURIComponent(encodedCert));
+            modalTitle.textContent = cert.title;
+            modalMeta.textContent = `${cert.issuer} • ${cert.year} • ${cert.category} • ${cert.size}`;
+            const targetSrc = cert.blobUrl || cert.path;
+            modalFrame.src = targetSrc;
+            modalDownload.href = targetSrc;
+            previewModal.classList.remove('hidden');
+            document.body.style.overflow = 'hidden';
+        }
+
+        function closeModal() {
+            previewModal.classList.add('hidden');
+            modalFrame.src = '';
+            document.body.style.overflow = 'auto';
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && !previewModal.classList.contains('hidden')) {
+                closeModal();
+            }
+        });
+
+        // ==========================================
+        // Live Browser Directory Scanner Feature
+        // ==========================================
+        async function scanFolderDirectly() {
+            if ('showDirectoryPicker' in window) {
+                try {
+                    const dirHandle = await window.showDirectoryPicker();
+                    const scannedCerts = [];
+                    await readDirectoryRecursive(dirHandle, '', scannedCerts);
+
+                    if (scannedCerts.length > 0) {
+                        certificates = scannedCerts;
+                        showScanAlert(`Successfully scanned ${scannedCerts.length} certificates live from folder!`);
+                        updateStatsAndControls();
+                        renderCertificates();
+                    } else {
+                        alert('No PDF certificates found in the selected folder.');
+                    }
+                } catch (err) {
+                    if (err.name !== 'AbortError') {
+                        console.warn('DirectoryPicker error, using fallback:', err);
+                        triggerFallbackScan();
+                    }
+                }
+            } else {
+                triggerFallbackScan();
+            }
+        }
+
+        function triggerFallbackScan() {
+            const input = document.getElementById('folder-input-fallback');
+            input.onchange = (e) => {
+                const files = Array.from(e.target.files).filter(f => f.name.toLowerCase().endsWith('.pdf'));
+                if (files.length > 0) {
+                    certificates = files.map(f => parseFileObject(f));
+                    showScanAlert(`Successfully scanned ${files.length} certificates from selected directory!`);
+                    updateStatsAndControls();
+                    renderCertificates();
+                }
+            };
+            input.click();
+        }
+
+        async function readDirectoryRecursive(dirHandle, currentPath, list) {
+            for await (const entry of dirHandle.values()) {
+                if (entry.kind === 'file' && entry.name.toLowerCase().endsWith('.pdf')) {
+                    const file = await entry.getFile();
+                    const cert = parseFileObject(file, currentPath);
+                    list.push(cert);
+                } else if (entry.kind === 'directory') {
+                    const subPath = currentPath ? `${currentPath}/${entry.name}` : entry.name;
+                    await readDirectoryRecursive(entry, subPath, list);
+                }
+            }
+        }
+
+        function parseFileObject(file, subfolder = '') {
+            const pathParts = file.webkitRelativePath ? file.webkitRelativePath.split('/') : subfolder.split('/').filter(Boolean);
+            let folder = 'award';
+            if (pathParts.length > 1) {
+                folder = pathParts[pathParts.length - 2];
+            } else if (subfolder) {
+                folder = subfolder.split('/').pop();
+            } else if (/profesional|professional/i.test(file.name)) {
+                folder = 'professional';
+            }
+
+            const name = file.name;
+            const nameWithoutExt = name.replace(/\.pdf$/i, '');
+
+            let issuer = "Other";
+            if (/^google/i.test(nameWithoutExt)) issuer = "Google";
+            else if (/^aws/i.test(nameWithoutExt)) issuer = "AWS";
+            else if (/^datacamp/i.test(nameWithoutExt)) issuer = "DataCamp";
+            else if (/^upsi/i.test(nameWithoutExt)) issuer = "UPSI";
+            else if (/^celcom/i.test(nameWithoutExt)) issuer = "Celcom";
+            else if (/^bernama/i.test(nameWithoutExt)) issuer = "Bernama";
+            else if (/^tarumt/i.test(nameWithoutExt)) issuer = "TAR UMT";
+            else if (/^usm/i.test(nameWithoutExt)) issuer = "USM";
+            else if (/^allied-view/i.test(nameWithoutExt)) issuer = "Allied View";
+            else if (/^kbs/i.test(nameWithoutExt)) issuer = "KBS";
+            else if (/^gaqm/i.test(nameWithoutExt)) issuer = "GAQM";
+            else if (/^gdg/i.test(nameWithoutExt)) issuer = "GDG";
+            else if (/^ga-/i.test(nameWithoutExt)) issuer = "General Assembly";
+
+            const yearMatch = nameWithoutExt.match(/(202[0-9])/);
+            const year = yearMatch ? yearMatch[1] : "2024";
+
+            let cleanTitle = nameWithoutExt
+                .replace(/^(upsi|google|aws|datacamp|celcom|bernama|tarumt|usm|allied-view|kbs|gaqm|gdg|ga)-/i, "")
+                .replace(/(award|appreciation|completion|recognition|participation|profesional|professional)-cert-?/i, "")
+                .replace(/-?202[0-9]$/, "")
+                .replace(/-/g, ' ')
+                .replace(/\b\w/g, l => l.toUpperCase());
+
+            // Specific acronym cleanup
+            cleanTitle = cleanTitle
+                .replace(/\bAi\b/g, "AI")
+                .replace(/\bIeriich\b/g, "IERIICH")
+                .replace(/\bChatgpt\b/g, "ChatGPT")
+                .replace(/\bDalle\b/g, "DALL-E")
+                .replace(/\bBi\b/g, "Power BI")
+                .replace(/\bBlis\b/g, "BLIS")
+                .replace(/\bGithub\b/g, "GitHub")
+                .replace(/\bDevops\b/g, "DevOps")
+                .replace(/\bKitahack\b/g, "KitaHack")
+                .replace(/\bBeginers\b/g, "Beginners");
+
+            const relPath = folder === 'award' || folder === 'professional' || !folder ? name : `${folder}/${name}`;
+
+            return {
+                filename: name,
+                path: relPath,
+                blobUrl: URL.createObjectURL(file),
+                folder: folder,
+                category: folder.charAt(0).toUpperCase() + folder.slice(1),
+                title: cleanTitle.trim(),
+                issuer: issuer,
+                year: year,
+                size: (file.size / 1024).toFixed(1) + " KB"
+            };
+        }
+
+        function showScanAlert(text) {
+            const alertBox = document.getElementById('scan-alert');
+            document.getElementById('scan-alert-text').textContent = text;
+            alertBox.classList.remove('hidden');
+        }
+
+        // Initialize display
+        updateStatsAndControls();
+        renderCertificates();
+    </script>
+</body>
+</html>
